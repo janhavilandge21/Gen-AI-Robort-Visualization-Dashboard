@@ -1,0 +1,670 @@
+import streamlit as st
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import cv2
+from PIL import Image
+import networkx as nx
+import requests
+import json
+from datetime import datetime
+import time
+
+# Page configuration
+st.set_page_config(
+    page_title="GenAI Robotics Visualization Dashboard",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Custom CSS
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 3rem;
+        color: #1f77b4;
+        text-align: center;
+        margin-bottom: 2rem;
+        text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .section-header {
+        font-size: 2rem;
+        color: #ff7f0e;
+        margin: 2rem 0 1rem 0;
+        border-bottom: 3px solid #ff7f0e;
+        padding-bottom: 0.5rem;
+    }
+    .metric-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 1rem;
+        border-radius: 10px;
+        color: white;
+        text-align: center;
+        margin: 1rem 0;
+    }
+    .robot-animation {
+        text-align: center;
+        font-size: 4rem;
+        animation: bounce 2s infinite;
+    }
+    @keyframes bounce {
+        0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+        40% {transform: translateY(-20px);}
+        60% {transform: translateY(-10px);}
+    }
+</style>
+""", unsafe_allow_html=True)
+
+def show_home():
+    st.markdown('<h2 class="section-header">Welcome to GenAI Robotics Dashboard</h2>', unsafe_allow_html=True)
+    
+    # Robot animation
+    st.markdown('<div class="robot-animation">🤖</div>', unsafe_allow_html=True)
+    
+    # Overview cards
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.markdown('<div class="metric-card"><h3>AI Models</h3><h2>15+</h2><p>Active Models</p></div>', unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown('<div class="metric-card"><h3>Robots</h3><h2>8</h2><p>Connected</p></div>', unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown('<div class="metric-card"><h3>Data Points</h3><h2>2.5M</h2><p>Processed</p></div>', unsafe_allow_html=True)
+    
+    with col4:
+        st.markdown('<div class="metric-card"><h3>Accuracy</h3><h2>94.7%</h2><p>Overall</p></div>', unsafe_allow_html=True)
+    
+    # Recent activity
+    st.markdown('<h3 class="section-header">Recent Activity</h3>', unsafe_allow_html=True)
+    
+    # Generate sample activity data
+    activities = [
+        {"time": "2 minutes ago", "event": "Robot arm calibration completed", "status": "✅"},
+        {"time": "5 minutes ago", "event": "AI model training finished", "status": "✅"},
+        {"time": "12 minutes ago", "event": "New sensor data received", "status": "📡"},
+        {"time": "18 minutes ago", "event": "Path planning optimization", "status": "🔄"},
+        {"time": "25 minutes ago", "event": "Quality control check", "status": "✅"}
+    ]
+    
+    for activity in activities:
+        col1, col2, col3 = st.columns([1, 3, 1])
+        with col1:
+            st.write(activity["time"])
+        with col2:
+            st.write(activity["event"])
+        with col3:
+            st.write(activity["status"])
+
+def show_data_analytics():
+    st.markdown('<h2 class="section-header">📊 Data Analytics Dashboard</h2>', unsafe_allow_html=True)
+    
+    # Generate sample robotics data
+    np.random.seed(42)
+    n_samples = 1000
+    
+    # Robot sensor data
+    time_data = np.linspace(0, 24, n_samples)  # 24 hours
+    temperature = 20 + 5 * np.sin(time_data * np.pi / 12) + np.random.normal(0, 0.5, n_samples)
+    humidity = 50 + 10 * np.sin(time_data * np.pi / 8) + np.random.normal(0, 2, n_samples)
+    pressure = 1013 + 20 * np.sin(time_data * np.pi / 6) + np.random.normal(0, 5, n_samples)
+    
+    # Create DataFrame
+    df = pd.DataFrame({
+        'Time': time_data,
+        'Temperature (°C)': temperature,
+        'Humidity (%)': humidity,
+        'Pressure (hPa)': pressure
+    })
+    
+    # Line charts
+    st.subheader("Sensor Data Over Time")
+    
+    fig = make_subplots(
+        rows=3, cols=1,
+        subplot_titles=('Temperature', 'Humidity', 'Pressure'),
+        vertical_spacing=0.1
+    )
+    
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['Temperature (°C)'], name='Temperature'), row=1, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['Humidity (%)'], name='Humidity'), row=2, col=1)
+    fig.add_trace(go.Scatter(x=df['Time'], y=df['Pressure (hPa)'], name='Pressure'), row=3, col=1)
+    
+    fig.update_layout(height=600, title_text="24-Hour Sensor Monitoring")
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Correlation heatmap
+    st.subheader("Sensor Correlation Analysis")
+    correlation_matrix = df[['Temperature (°C)', 'Humidity (%)', 'Pressure (hPa)']].corr()
+    
+    fig_heatmap = px.imshow(
+        correlation_matrix,
+        text_auto=True,
+        aspect="auto",
+        color_continuous_scale="RdBu_r"
+    )
+    fig_heatmap.update_layout(title="Sensor Correlation Heatmap")
+    st.plotly_chart(fig_heatmap, use_container_width=True)
+    
+    # Statistical summary
+    st.subheader("Statistical Summary")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.write("**Temperature Statistics:**")
+        st.write(df['Temperature (°C)'].describe())
+    
+    with col2:
+        st.write("**Humidity Statistics:**")
+        st.write(df['Humidity (%)'].describe())
+
+def show_robot_simulation():
+    st.markdown('<h2 class="section-header">🤖 Robot Simulation & Control</h2>', unsafe_allow_html=True)
+    
+    # Robot control panel
+    st.subheader("Robot Control Panel")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.write("**Movement Control**")
+        x_pos = st.slider("X Position", -100, 100, 0)
+        y_pos = st.slider("Y Position", -100, 100, 0)
+        z_pos = st.slider("Z Position", 0, 100, 50)
+    
+    with col2:
+        st.write("**Joint Angles**")
+        joint1 = st.slider("Joint 1 (deg)", -180, 180, 0)
+        joint2 = st.slider("Joint 2 (deg)", -180, 180, 0)
+        joint3 = st.slider("Joint 3 (deg)", -180, 180, 0)
+    
+    with col3:
+        st.write("**Speed Control**")
+        speed = st.slider("Speed", 0.1, 2.0, 1.0, 0.1)
+        acceleration = st.slider("Acceleration", 0.1, 5.0, 1.0, 0.1)
+    
+    # Robot visualization
+    st.subheader("Robot Visualization")
+    
+    # Create 3D robot arm visualization
+    fig = go.Figure()
+    
+    # Base
+    fig.add_trace(go.Scatter3d(
+        x=[0, 0], y=[0, 0], z=[0, 20],
+        mode='lines+markers',
+        name='Base',
+        line=dict(color='blue', width=8),
+        marker=dict(size=5)
+    ))
+    
+    # Joint 1 to Joint 2
+    x1, y1, z1 = 0, 0, 20
+    x2 = x1 + 30 * np.cos(np.radians(joint1))
+    y2 = y1 + 30 * np.sin(np.radians(joint1))
+    z2 = z1
+    
+    fig.add_trace(go.Scatter3d(
+        x=[x1, x2], y=[y1, y2], z=[z1, z2],
+        mode='lines+markers',
+        name='Arm 1',
+        line=dict(color='red', width=6),
+        marker=dict(size=4)
+    ))
+    
+    # Joint 2 to Joint 3
+    x3 = x2 + 25 * np.cos(np.radians(joint1 + joint2))
+    y3 = y2 + 25 * np.sin(np.radians(joint1 + joint2))
+    z3 = z2
+    
+    fig.add_trace(go.Scatter3d(
+        x=[x2, x3], y=[y2, y3], z=[z2, z3],
+        mode='lines+markers',
+        name='Arm 2',
+        line=dict(color='green', width=6),
+        marker=dict(size=4)
+    ))
+    
+    # End effector
+    x4 = x3 + 15 * np.cos(np.radians(joint1 + joint2 + joint3))
+    y4 = y3 + 15 * np.sin(np.radians(joint1 + joint2 + joint3))
+    z4 = z3
+    
+    fig.add_trace(go.Scatter3d(
+        x=[x3, x4], y=[y3, y4], z=[z3, z4],
+        mode='lines+markers',
+        name='End Effector',
+        line=dict(color='purple', width=4),
+        marker=dict(size=6, symbol='diamond')
+    ))
+    
+    fig.update_layout(
+        title="3D Robot Arm Visualization",
+        scene=dict(
+            xaxis_title="X (mm)",
+            yaxis_title="Y (mm)",
+            zaxis_title="Z (mm)",
+            aspectmode='cube'
+        ),
+        height=600
+    )
+    
+    st.plotly_chart(fig, use_container_width=True)
+    
+    # Robot status
+    st.subheader("Robot Status")
+    status_col1, status_col2, status_col3, status_col4 = st.columns(4)
+    
+    with status_col1:
+        st.metric("Status", "🟢 Online", delta="Connected")
+    
+    with status_col2:
+        st.metric("Battery", "87%", delta="-2%")
+    
+    with status_col3:
+        st.metric("Temperature", "42°C", delta="+3°C")
+    
+    with status_col4:
+        st.metric("Uptime", "23h 45m", delta="+1h")
+
+def show_ai_models():
+    st.markdown('<h2 class="section-header">🧠 AI Models & Predictions</h2>', unsafe_allow_html=True)
+    
+    # Model selection
+    st.subheader("Select AI Model")
+    model_type = st.selectbox(
+        "Choose model type:",
+        ["Path Planning", "Object Detection", "Motion Control", "Quality Control", "Predictive Maintenance"]
+    )
+    
+    # Model performance metrics
+    st.subheader("Model Performance Metrics")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Accuracy over time
+        epochs = np.arange(1, 101)
+        train_acc = 0.5 + 0.4 * (1 - np.exp(-epochs / 20)) + np.random.normal(0, 0.02, 100)
+        val_acc = 0.5 + 0.35 * (1 - np.exp(-epochs / 25)) + np.random.normal(0, 0.03, 100)
+        
+        fig_acc = go.Figure()
+        fig_acc.add_trace(go.Scatter(x=epochs, y=train_acc, name='Training Accuracy', line=dict(color='blue')))
+        fig_acc.add_trace(go.Scatter(x=epochs, y=val_acc, name='Validation Accuracy', line=dict(color='red')))
+        fig_acc.update_layout(title="Training vs Validation Accuracy", xaxis_title="Epochs", yaxis_title="Accuracy")
+        st.plotly_chart(fig_acc, use_container_width=True)
+    
+    with col2:
+        # Loss over time
+        train_loss = 0.8 * np.exp(-epochs / 15) + np.random.normal(0, 0.05, 100)
+        val_loss = 0.8 * np.exp(-epochs / 18) + np.random.normal(0, 0.06, 100)
+        
+        fig_loss = go.Figure()
+        fig_loss.add_trace(go.Scatter(x=epochs, y=train_loss, name='Training Loss', line=dict(color='blue')))
+        fig_loss.add_trace(go.Scatter(x=epochs, y=val_loss, name='Validation Loss', line=dict(color='red')))
+        fig_loss.update_layout(title="Training vs Validation Loss", xaxis_title="Epochs", yaxis_title="Loss")
+        st.plotly_chart(fig_loss, use_container_width=True)
+    
+    # Real-time predictions
+    st.subheader("Real-time Predictions")
+    
+    # Generate sample prediction data
+    time_points = pd.date_range(start='2024-01-01', periods=50, freq='H')
+    predictions = np.random.normal(0.85, 0.1, 50)
+    actual = predictions + np.random.normal(0, 0.05, 50)
+    
+    fig_pred = go.Figure()
+    fig_pred.add_trace(go.Scatter(x=time_points, y=predictions, name='Predicted', line=dict(color='blue')))
+    fig_pred.add_trace(go.Scatter(x=time_points, y=actual, name='Actual', line=dict(color='red')))
+    fig_pred.update_layout(title="Prediction vs Actual Values", xaxis_title="Time", yaxis_title="Value")
+    st.plotly_chart(fig_pred, use_container_width=True)
+    
+    # Model confusion matrix
+    st.subheader("Confusion Matrix")
+    
+    # Generate sample confusion matrix
+    cm_data = np.array([[85, 5], [8, 92]])
+    cm_labels = ['Predicted Negative', 'Predicted Positive']
+    actual_labels = ['Actual Negative', 'Actual Positive']
+    
+    fig_cm = px.imshow(
+        cm_data,
+        text_auto=True,
+        aspect="auto",
+        color_continuous_scale="Blues",
+        labels=dict(x="Predicted", y="Actual")
+    )
+    fig_cm.update_layout(title="Confusion Matrix")
+    st.plotly_chart(fig_cm, use_container_width=True)
+
+def show_performance_metrics():
+    st.markdown('<h2 class="section-header">📈 Performance Metrics & KPIs</h2>', unsafe_allow_html=True)
+    
+    # KPI cards
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Production Rate", "156 units/hr", delta="+12%", delta_color="normal")
+    
+    with col2:
+        st.metric("Quality Score", "98.7%", delta="+0.5%", delta_color="normal")
+    
+    with col3:
+        st.metric("Efficiency", "94.2%", delta="-1.2%", delta_color="inverse")
+    
+    with col4:
+        st.metric("Downtime", "2.3%", delta="-0.8%", delta_color="normal")
+    
+    # Performance trends
+    st.subheader("Performance Trends Over Time")
+    
+    # Generate sample performance data
+    dates = pd.date_range(start='2024-01-01', periods=30, freq='D')
+    
+    production_data = 140 + 20 * np.sin(np.arange(30) * np.pi / 15) + np.random.normal(0, 5, 30)
+    quality_data = 95 + 3 * np.sin(np.arange(30) * np.pi / 10) + np.random.normal(0, 1, 30)
+    efficiency_data = 90 + 5 * np.sin(np.arange(30) * np.pi / 12) + np.random.normal(0, 2, 30)
+    
+    fig_perf = make_subplots(
+        rows=3, cols=1,
+        subplot_titles=('Production Rate (units/hr)', 'Quality Score (%)', 'Efficiency (%)'),
+        vertical_spacing=0.1
+    )
+    
+    fig_perf.add_trace(go.Scatter(x=dates, y=production_data, name='Production'), row=1, col=1)
+    fig_perf.add_trace(go.Scatter(x=dates, y=quality_data, name='Quality'), row=2, col=1)
+    fig_perf.add_trace(go.Scatter(x=dates, y=efficiency_data, name='Efficiency'), row=3, col=1)
+    
+    fig_perf.update_layout(height=600, title_text="30-Day Performance Trends")
+    st.plotly_chart(fig_perf, use_container_width=True)
+    
+    # Comparative analysis
+    st.subheader("Comparative Analysis")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        # Bar chart comparison
+        categories = ['Robot A', 'Robot B', 'Robot C', 'Robot D']
+        performance = [92, 88, 95, 89]
+        
+        fig_bar = px.bar(
+            x=categories,
+            y=performance,
+            title="Robot Performance Comparison",
+            color=performance,
+            color_continuous_scale="Viridis"
+        )
+        st.plotly_chart(fig_bar, use_container_width=True)
+    
+    with col2:
+        # Pie chart for resource allocation
+        resources = ['Processing', 'Memory', 'Network', 'Storage']
+        allocation = [35, 25, 20, 20]
+        
+        fig_pie = px.pie(
+            values=allocation,
+            names=resources,
+            title="Resource Allocation"
+        )
+        st.plotly_chart(fig_pie, use_container_width=True)
+
+def show_network_analysis():
+    st.markdown('<h2 class="section-header">🌐 Network Analysis & Connectivity</h2>', unsafe_allow_html=True)
+    
+    # Network topology
+    st.subheader("Network Topology")
+    
+    # Create a sample network graph
+    G = nx.Graph()
+    
+    # Add nodes (robots, sensors, controllers)
+    nodes = ['Main Controller', 'Robot 1', 'Robot 2', 'Robot 3', 'Sensor Hub', 'AI Server', 'Database']
+    G.add_nodes_from(nodes)
+    
+    # Add edges (connections)
+    edges = [
+        ('Main Controller', 'Robot 1'), ('Main Controller', 'Robot 2'),
+        ('Main Controller', 'Robot 3'), ('Main Controller', 'Sensor Hub'),
+        ('Sensor Hub', 'Robot 1'), ('Sensor Hub', 'Robot 2'),
+        ('AI Server', 'Main Controller'), ('Database', 'AI Server'),
+        ('Robot 1', 'Robot 2'), ('Robot 2', 'Robot 3')
+    ]
+    G.add_edges_from(edges)
+    
+    # Create network visualization
+    pos = nx.spring_layout(G, k=3, iterations=50)
+    
+    # Node positions
+    node_x = [pos[node][0] for node in G.nodes()]
+    node_y = [pos[node][1] for node in G.nodes()]
+    
+    # Edge positions
+    edge_x = []
+    edge_y = []
+    for edge in G.edges():
+        x0, y0 = pos[edge[0]]
+        x1, y1 = pos[edge[1]]
+        edge_x.extend([x0, x1, None])
+        edge_y.extend([y0, y1, None])
+    
+    # Create network plot
+    fig_network = go.Figure()
+    
+    # Add edges
+    fig_network.add_trace(go.Scatter(
+        x=edge_x, y=edge_y,
+        mode='lines',
+        line=dict(width=2, color='gray'),
+        hoverinfo='none',
+        showlegend=False
+    ))
+    
+    # Add nodes
+    fig_network.add_trace(go.Scatter(
+        x=node_x, y=node_y,
+        mode='markers+text',
+        marker=dict(size=20, color='lightblue'),
+        text=list(G.nodes()),
+        textposition="middle center",
+        hoverinfo='text',
+        showlegend=False
+    ))
+    
+    fig_network.update_layout(
+        title="Robotics Network Topology",
+        showlegend=False,
+        hovermode='closest',
+        margin=dict(b=20, l=5, r=5, t=40),
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        height=500
+    )
+    
+    st.plotly_chart(fig_network, use_container_width=True)
+    
+    # Network statistics
+    st.subheader("Network Statistics")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.metric("Total Nodes", len(G.nodes()))
+        st.metric("Total Edges", len(G.edges()))
+    
+    with col2:
+        st.metric("Network Density", f"{nx.density(G):.3f}")
+        st.metric("Average Degree", f"{sum(dict(G.degree()).values()) / len(G.nodes()):.2f}")
+    
+    with col3:
+        st.metric("Connected Components", nx.number_connected_components(G))
+        st.metric("Network Diameter", nx.diameter(G) if nx.is_connected(G) else "N/A")
+    
+    # Traffic analysis
+    st.subheader("Network Traffic Analysis")
+    
+    # Generate sample traffic data
+    time_hours = np.arange(0, 24)
+    traffic_data = 100 + 50 * np.sin(time_hours * np.pi / 12) + np.random.normal(0, 10, 24)
+    
+    fig_traffic = go.Figure()
+    fig_traffic.add_trace(go.Scatter(
+        x=time_hours,
+        y=traffic_data,
+        mode='lines+markers',
+        name='Network Traffic',
+        line=dict(color='green', width=3),
+        fill='tonexty'
+    ))
+    
+    fig_traffic.update_layout(
+        title="24-Hour Network Traffic",
+        xaxis_title="Hour of Day",
+        yaxis_title="Traffic (MB/s)",
+        height=400
+    )
+    
+    st.plotly_chart(fig_traffic, use_container_width=True)
+
+def show_3d_visualization():
+    st.markdown('<h2 class="section-header">🎨 3D Visualization & Modeling</h2>', unsafe_allow_html=True)
+    
+    # 3D robot workspace
+    st.subheader("3D Robot Workspace")
+    
+    # Generate 3D workspace data
+    x = np.linspace(-5, 5, 20)
+    y = np.linspace(-5, 5, 20)
+    X, Y = np.meshgrid(x, y)
+    Z = 0.5 * np.sin(X) * np.cos(Y) + 2
+    
+    # Create 3D surface plot
+    fig_3d = go.Figure(data=[go.Surface(z=Z, x=X, y=Y, colorscale='Viridis')])
+    
+    # Add robot positions
+    robot_positions = [
+        {'x': -2, 'y': -2, 'z': 2.5, 'name': 'Robot 1'},
+        {'x': 2, 'y': 2, 'z': 2.5, 'name': 'Robot 2'},
+        {'x': 0, 'y': 0, 'z': 2.5, 'name': 'Robot 3'}
+    ]
+    
+    for robot in robot_positions:
+        fig_3d.add_trace(go.Scatter3d(
+            x=[robot['x']], y=[robot['y']], z=[robot['z']],
+            mode='markers',
+            name=robot['name'],
+            marker=dict(size=8, symbol='diamond', color='red')
+        ))
+    
+    fig_3d.update_layout(
+        title="3D Robot Workspace with Obstacles",
+        scene=dict(
+            xaxis_title="X (m)",
+            yaxis_title="Y (m)",
+            zaxis_title="Z (m)",
+            aspectmode='cube'
+        ),
+        height=600
+    )
+    
+    st.plotly_chart(fig_3d, use_container_width=True)
+    
+    # 3D path planning
+    st.subheader("3D Path Planning Visualization")
+    
+    # Generate sample path
+    t = np.linspace(0, 4*np.pi, 100)
+    path_x = 3 * np.cos(t)
+    path_y = 3 * np.sin(t)
+    path_z = 1 + 0.5 * np.sin(2*t)
+    
+    fig_path = go.Figure()
+    
+    # Add path
+    fig_path.add_trace(go.Scatter3d(
+        x=path_x, y=path_y, z=path_z,
+        mode='lines',
+        name='Planned Path',
+        line=dict(color='red', width=5)
+    ))
+    
+    # Add start and end points
+    fig_path.add_trace(go.Scatter3d(
+        x=[path_x[0]], y=[path_y[0]], z=[path_z[0]],
+        mode='markers',
+        name='Start',
+        marker=dict(size=10, symbol='circle', color='green')
+    ))
+    
+    fig_path.add_trace(go.Scatter3d(
+        x=[path_x[-1]], y=[path_y[-1]], z=[path_z[-1]],
+        mode='markers',
+        name='End',
+        marker=dict(size=10, symbol='circle', color='blue')
+    ))
+    
+    fig_path.update_layout(
+        title="3D Path Planning",
+        scene=dict(
+            xaxis_title="X (m)",
+            yaxis_title="Y (m)",
+            zaxis_title="Z (m)",
+            aspectmode='cube'
+        ),
+        height=500
+    )
+    
+    st.plotly_chart(fig_path, use_container_width=True)
+    
+    # Interactive 3D controls
+    st.subheader("3D View Controls")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        view_elevation = st.slider("Elevation", -90, 90, 30)
+    
+    with col2:
+        view_azimuth = st.slider("Azimuth", -180, 180, 45)
+    
+    with col3:
+        view_distance = st.slider("Distance", 1, 10, 5)
+    
+    # Update 3D view
+    if st.button("Update 3D View"):
+        st.success(f"3D view updated: Elevation={view_elevation}°, Azimuth={view_azimuth}°, Distance={view_distance}")
+
+def main():
+    # Header
+    st.markdown('<h1 class="main-header">🤖 GenAI Robotics Visualization Dashboard</h1>', unsafe_allow_html=True)
+    
+    # Sidebar navigation
+    st.sidebar.title("Navigation")
+    page = st.sidebar.selectbox(
+        "Choose a visualization:",
+        ["🏠 Home", "📊 Data Analytics", "🤖 Robot Simulation", "🧠 AI Models", "📈 Performance Metrics", "🌐 Network Analysis", "🎨 3D Visualization"]
+    )
+    
+    if page == "🏠 Home":
+        show_home()
+    elif page == "📊 Data Analytics":
+        show_data_analytics()
+    elif page == "🤖 Robot Simulation":
+        show_robot_simulation()
+    elif page == "🧠 AI Models":
+        show_ai_models()
+    elif page == "📈 Performance Metrics":
+        show_performance_metrics()
+    elif page == "🌐 Network Analysis":
+        show_network_analysis()
+    elif page == "🎨 3D Visualization":
+        show_3d_visualization()
+
+if __name__ == "__main__":
+    main() 
