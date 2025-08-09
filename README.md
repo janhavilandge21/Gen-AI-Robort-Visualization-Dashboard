@@ -179,4 +179,4 @@ The dashboard includes sample data for demonstration purposes:
 
 ---
 
-**Built with ❤️ using Streamlit, Plotly, and Python** 
+
